@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: which-is-better
+    runtime: docker
+    plan: starter
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: WHICHISBETTER_DATA_DIR
+        value: /var/lib/whichisbetter
+    disk:
+      name: which-is-better-data
+      mountPath: /var/lib/whichisbetter
+      sizeGB: 1

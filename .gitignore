@@ -47,3 +47,13 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# Local app artifacts
+data/
+downloaded_files/
+shiny-demo-stdout.log
+shiny-demo-stderr.log
+synthetic_*.png
+width-*.png
+__pycache__/
+*.pyc
