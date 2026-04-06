@@ -76,21 +76,37 @@ def parse_average_rating(tokens: List[OcrToken], width: int) -> Optional[float]:
 
 
 def parse_total_reviews(tokens: List[OcrToken]) -> Optional[int]:
+    review_pattern = r"review|reviews|rating|ratings|리뷰"
+
+    def parse_count_value(text: str) -> Optional[int]:
+        cleaned = text.strip()
+        if not cleaned:
+            return None
+
+        grouped_match = re.search(r"(\d[\d,\.\s]{0,14}\d|\d)", cleaned)
+        if not grouped_match:
+            return None
+
+        digits_only = re.sub(r"\D", "", grouped_match.group(1))
+        if not digits_only:
+            return None
+
+        return int(digits_only)
+
     best = None
     for token in tokens:
         text = token.text.lower()
-        if not re.search(r"review|rating|ratings|reviews|리뷰", text):
+        if not re.search(review_pattern, text):
             continue
-        number_match = re.search(r"(\d+)", text)
-        if number_match:
-            count = int(number_match.group(1))
+        count = parse_count_value(text)
+        if count is not None:
             best = count if best is None else max(best, count)
 
     if best is not None:
         return best
 
-    review_tokens = [token for token in tokens if re.search(r"review|rating|ratings|reviews|리뷰", token.text.lower())]
-    digit_tokens = [token for token in tokens if re.fullmatch(r"\d+", token.text.strip())]
+    review_tokens = [token for token in tokens if re.search(review_pattern, token.text.lower())]
+    digit_tokens = [token for token in tokens if parse_count_value(token.text) is not None]
     for review_token in review_tokens:
         nearby = [
             token for token in digit_tokens
@@ -98,7 +114,7 @@ def parse_total_reviews(tokens: List[OcrToken]) -> Optional[int]:
         ]
         if nearby:
             nearby.sort(key=lambda token: (-token.score, abs(token.center_y - review_token.center_y)))
-            return int(nearby[0].text.strip())
+            return parse_count_value(nearby[0].text)
 
     return None
 

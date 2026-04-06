@@ -16,6 +16,15 @@ display_url <- function(value) {
 }
 
 
+default_vector_value <- function(side) {
+  if (identical(side, "a")) {
+    "c(5,5,5,5,5,5,5,5,4)"
+  } else {
+    "c(1,4,1,5,4,5,5,5,4,4)"
+  }
+}
+
+
 optional_number <- function(value, integer = FALSE) {
   if (is.null(value) || !length(value) || !is.finite(value)) {
     return(NULL)
@@ -141,7 +150,7 @@ item_panel <- function(label, side) {
           paste0("vector_", side),
           "Ratings vector",
           rows = 4,
-          value = if (side == "a") "c(5,5,5,5,5,5,5,5,4)" else "c(1,4,1,5,4,5,5,5,4,4)"
+          value = default_vector_value(side)
         ),
         p(
           class = "text-muted compact-note",
@@ -457,6 +466,7 @@ ui <- page_sidebar(
     tags$ul(
       tags$li("Choose between \"Histogram counts\", \"Histogram screenshot\", or \"Raw vector\"."),
       tags$li("If you use screenshot mode, open \"Screenshot parsing\", upload the image, and then review the suggested counts."),
+      tags$li("If you manually change \"Overall rating shown\" or \"Rating count shown\", click \"Parse Screenshot\" again so those corrections can update the suggested counts."),
       tags$li("Use raw rating vectors only when you already have the full list of scores."),
       tags$li("Click \"Analyze Inputs\" to get a plain-language answer, confidence interval, and an R code export for your own local modeling."),
       tags$li("Labels and pasted URLs are saved locally whenever you analyze a comparison.")
@@ -536,6 +546,59 @@ server <- function(input, output, session) {
     display_url(input[[paste0("url_", side)]])
   }
 
+  resolved_vector_text <- function(side) {
+    value <- input[[paste0("vector_", side)]] %||% default_vector_value(side)
+    if (!length(value) || is.null(value[[1]])) {
+      default_vector_value(side)
+    } else {
+      as.character(value[[1]])
+    }
+  }
+
+  resolved_histogram_counts <- function(side) {
+    input_counts <- as.integer(vapply(1:5, function(star) {
+      value <- input[[paste0("count_", side, "_", star)]] %||% 0
+      if (!length(value)) {
+        return(0)
+      }
+      as.numeric(value[[1]])
+    }, numeric(1)))
+
+    mode <- input[[paste0("mode_", side)]]
+    parsed_result <- if (identical(side, "a")) parsed_counts_a() else parsed_counts_b()
+    parsed_counts <- NULL
+    if (!is.null(parsed_result) && isTRUE(parsed_result$success) && length(parsed_result$counts_1_to_5) == 5) {
+      parsed_counts <- as.integer(parsed_result$counts_1_to_5)
+    }
+
+    input_valid <- !any(is.na(input_counts)) && all(input_counts >= 0) && sum(input_counts) >= 2
+    if (identical(mode, "screenshot") && !input_valid && !is.null(parsed_counts)) {
+      return(parsed_counts)
+    }
+
+    input_counts
+  }
+
+  build_current_ratings_df <- function() {
+    a <- collect_place_data(
+      label = "A",
+      mode = input$mode_a,
+      vector_text = resolved_vector_text("a"),
+      histogram_counts = resolved_histogram_counts("a")
+    )
+
+    b <- collect_place_data(
+      label = "B",
+      mode = input$mode_b,
+      vector_text = resolved_vector_text("b"),
+      histogram_counts = resolved_histogram_counts("b")
+    )
+
+    out <- rbind(a, b)
+    out$group <- factor(out$group, levels = c("A", "B"))
+    out
+  }
+
   item_snapshot <- function(side) {
     fallback <- if (identical(side, "a")) "Item A" else "Item B"
     mode <- input[[paste0("mode_", side)]]
@@ -545,15 +608,11 @@ server <- function(input, output, session) {
     )
 
     if (identical(mode, "histogram")) {
-      payload$histogram_counts <- as.integer(vapply(1:5, function(star) {
-        input[[paste0("count_", side, "_", star)]]
-      }, numeric(1)))
+      payload$histogram_counts <- resolved_histogram_counts(side)
     } else if (identical(mode, "screenshot")) {
-      payload$histogram_counts <- as.integer(vapply(1:5, function(star) {
-        input[[paste0("count_", side, "_", star)]]
-      }, numeric(1)))
+      payload$histogram_counts <- resolved_histogram_counts(side)
     } else {
-      payload$ratings_vector <- normalize_text_input(input[[paste0("vector_", side)]])
+      payload$ratings_vector <- normalize_text_input(resolved_vector_text(side))
     }
 
     list(
@@ -708,7 +767,7 @@ server <- function(input, output, session) {
   }
 
   compute_analysis_result <- function() {
-    ratings_df <- build_ratings_df(input)
+    ratings_df <- build_current_ratings_df()
     label_a <- item_label("a")
     label_b <- item_label("b")
 
@@ -886,7 +945,7 @@ server <- function(input, output, session) {
 
   current_ratings_data <- reactive({
     tryCatch({
-      ratings_df <- build_ratings_df(input)
+      ratings_df <- build_current_ratings_df()
       ratings_df$place <- c(
         rep(item_label("a"), sum(ratings_df$group == "A")),
         rep(item_label("b"), sum(ratings_df$group == "B"))
