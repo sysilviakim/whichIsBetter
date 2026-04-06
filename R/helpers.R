@@ -153,12 +153,28 @@ format_r_vector <- function(values) {
 }
 
 
+format_r_repeated_vector <- function(values) {
+  if (!length(values)) {
+    return("numeric()")
+  }
+
+  counts <- tabulate(as.integer(values), nbins = 5)
+  parts <- vapply(
+    which(counts > 0),
+    function(star) sprintf("rep(%d, %d)", star, counts[[star]]),
+    character(1)
+  )
+  paste0("c(", paste(parts, collapse = ", "), ")")
+}
+
+
 build_local_model_code <- function(ratings_df, label_a, label_b, url_a = NULL, url_b = NULL) {
   ratings_a <- ratings_df$rating[ratings_df$group == "A"]
   ratings_b <- ratings_df$rating[ratings_df$group == "B"]
 
   lines <- c(
     "# Copy-paste into your local R session and fit any model you want.",
+    "# The ratings below are reconstructed from the entered vectors or histogram counts.",
     sprintf("label_a <- %s", r_string_literal(label_a)),
     sprintf("label_b <- %s", r_string_literal(label_b))
   )
@@ -172,8 +188,8 @@ build_local_model_code <- function(ratings_df, label_a, label_b, url_a = NULL, u
 
   lines <- c(
     lines,
-    sprintf("ratings_a <- %s", format_r_vector(ratings_a)),
-    sprintf("ratings_b <- %s", format_r_vector(ratings_b)),
+    sprintf("ratings_a <- %s", format_r_repeated_vector(ratings_a)),
+    sprintf("ratings_b <- %s", format_r_repeated_vector(ratings_b)),
     "",
     "ratings_df <- data.frame(",
     "  group = c(rep(label_a, length(ratings_a)), rep(label_b, length(ratings_b))),",
@@ -188,6 +204,208 @@ build_local_model_code <- function(ratings_df, label_a, label_b, url_a = NULL, u
   )
 
   paste(lines, collapse = "\n")
+}
+
+
+escape_html_text <- function(text) {
+  out <- gsub("&", "&amp;", text, fixed = TRUE)
+  out <- gsub("<", "&lt;", out, fixed = TRUE)
+  out <- gsub(">", "&gt;", out, fixed = TRUE)
+  out
+}
+
+
+escape_tex_text <- function(text) {
+  out <- gsub("\\\\", "\\\\textbackslash{}", text)
+  out <- gsub("([#$%&_{}])", "\\\\\\1", out, perl = TRUE)
+  out <- gsub("~", "\\\\textasciitilde{}", out, fixed = TRUE)
+  out <- gsub("\\^", "\\\\textasciicircum{}", out, perl = TRUE)
+  out
+}
+
+
+build_report_markdown <- function(report) {
+  summary_paragraphs <- report$summary_paragraphs %||% report$paragraphs %||% character()
+  sections <- report$export_sections %||% list()
+
+  lines <- c(
+    paste0("# ", report$title),
+    "",
+    summary_paragraphs
+  )
+
+  if (length(sections)) {
+    section_lines <- unlist(lapply(sections, function(section) {
+      body <- section$lines %||% character()
+      if (isTRUE(section$preformatted)) {
+        c(
+          "",
+          "---",
+          "",
+          paste0("## ", section$title),
+          "",
+          "```r",
+          body,
+          "```"
+        )
+      } else {
+        c(
+          "",
+          "---",
+          "",
+          paste0("## ", section$title),
+          "",
+          body
+        )
+      }
+    }), use.names = FALSE)
+    lines <- c(lines, section_lines)
+  }
+
+  paste(lines, collapse = "\n")
+}
+
+
+build_report_html <- function(report) {
+  summary_paragraphs <- report$summary_paragraphs %||% report$paragraphs %||% character()
+  paragraphs <- paste(
+    sprintf("<p>%s</p>", escape_html_text(summary_paragraphs)),
+    collapse = "\n"
+  )
+  sections <- report$export_sections %||% list()
+  section_html <- paste(
+    vapply(sections, function(section) {
+      body <- section$lines %||% character()
+      body_html <- if (isTRUE(section$preformatted)) {
+        sprintf("<pre>%s</pre>", escape_html_text(paste(body, collapse = "\n")))
+      } else {
+        paste(sprintf("<p>%s</p>", escape_html_text(body)), collapse = "\n")
+      }
+      paste0("<section>\n<h2>", escape_html_text(section$title), "</h2>\n", body_html, "\n</section>")
+    }, character(1)),
+    collapse = "\n"
+  )
+
+  paste0(
+    "<!doctype html>\n",
+    "<html lang=\"en\">\n",
+    "<head>\n",
+    "  <meta charset=\"utf-8\">\n",
+    "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n",
+    "  <title>", escape_html_text(report$title), "</title>\n",
+    "  <style>\n",
+    "    body { font-family: Georgia, 'Times New Roman', serif; color: #2f2a12; margin: 2.5rem auto; max-width: 52rem; line-height: 1.65; padding: 0 1.25rem; }\n",
+    "    h1 { margin-bottom: 1.25rem; }\n",
+    "    p { margin: 0 0 1rem 0; }\n",
+    "  </style>\n",
+    "</head>\n",
+    "<body>\n",
+    "  <h1>", escape_html_text(report$title), "</h1>\n",
+       paragraphs, "\n",
+       section_html, "\n",
+    "</body>\n",
+    "</html>\n"
+  )
+}
+
+
+build_report_tex <- function(report) {
+  summary_paragraphs <- report$summary_paragraphs %||% report$paragraphs %||% character()
+  body <- paste(
+    sprintf("%s\n", escape_tex_text(summary_paragraphs)),
+    collapse = "\n"
+  )
+  sections <- report$export_sections %||% list()
+  section_tex <- paste(
+    vapply(sections, function(section) {
+      body <- section$lines %||% character()
+      if (isTRUE(section$preformatted)) {
+        paste0(
+          "\\subsection*{", escape_tex_text(section$title), "}\n",
+          "\\begin{verbatim}\n",
+          paste(body, collapse = "\n"),
+          "\n\\end{verbatim}\n"
+        )
+      } else {
+        paste0(
+          "\\subsection*{", escape_tex_text(section$title), "}\n",
+          paste(sprintf("%s\n", escape_tex_text(body)), collapse = "\n")
+        )
+      }
+    }, character(1)),
+    collapse = "\n"
+  )
+
+  paste0(
+    "\\documentclass{article}\n",
+    "\\usepackage[margin=1in]{geometry}\n",
+    "\\usepackage[T1]{fontenc}\n",
+    "\\usepackage[utf8]{inputenc}\n",
+    "\\begin{document}\n",
+    "\\section*{", escape_tex_text(report$title), "}\n\n",
+    body,
+    section_tex,
+    "\\end{document}\n"
+  )
+}
+
+
+sanitize_report_slug <- function(text) {
+  slug <- tolower(gsub("[^A-Za-z0-9]+", "-", trimws(text)))
+  slug <- gsub("^-+|-+$", "", slug)
+  if (!nzchar(slug)) {
+    "which-is-better-report"
+  } else {
+    slug
+  }
+}
+
+
+write_report_export <- function(report, format, path) {
+  format <- tolower(trimws(format %||% "md"))
+
+  if (identical(format, "md")) {
+    writeLines(build_report_markdown(report), con = path, useBytes = TRUE)
+    return(invisible(path))
+  }
+
+  if (identical(format, "html")) {
+    writeLines(build_report_html(report), con = path, useBytes = TRUE)
+    return(invisible(path))
+  }
+
+  if (identical(format, "tex")) {
+    writeLines(build_report_tex(report), con = path, useBytes = TRUE)
+    return(invisible(path))
+  }
+
+  if (identical(format, "docx")) {
+    if (!requireNamespace("officer", quietly = TRUE)) {
+      stop("The `officer` package is required for DOCX export. Run `source(\"scripts/install_deps.R\")` to install it.")
+    }
+
+    doc <- officer::read_docx()
+    doc <- officer::body_add_par(doc, report$title, style = "heading 1")
+    for (paragraph in (report$summary_paragraphs %||% report$paragraphs %||% character())) {
+      doc <- officer::body_add_par(doc, paragraph, style = "Normal")
+    }
+    for (section in (report$export_sections %||% list())) {
+      doc <- officer::body_add_par(doc, section$title, style = "heading 2")
+      if (isTRUE(section$preformatted)) {
+        for (line in (section$lines %||% character())) {
+          doc <- officer::body_add_par(doc, line, style = "Normal")
+        }
+      } else {
+        for (line in (section$lines %||% character())) {
+          doc <- officer::body_add_par(doc, line, style = "Normal")
+        }
+      }
+    }
+    print(doc, target = path)
+    return(invisible(path))
+  }
+
+  stop("Unsupported report format.")
 }
 
 

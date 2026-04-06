@@ -26,11 +26,20 @@ default_vector_value <- function(side) {
 
 
 optional_number <- function(value, integer = FALSE) {
-  if (is.null(value) || !length(value) || !is.finite(value)) {
+  if (is.null(value) || !length(value)) {
     return(NULL)
   }
 
-  number <- as.numeric(value)
+  text <- trimws(as.character(value[[1]]))
+  if (!nzchar(text)) {
+    return(NULL)
+  }
+
+  number <- suppressWarnings(as.numeric(text))
+  if (!is.finite(number)) {
+    return(NULL)
+  }
+
   if (integer) {
     as.integer(round(number))
   } else {
@@ -96,20 +105,17 @@ item_panel <- function(label, side) {
           ),
           div(
             class = "parse-hint-grid",
-            numericInput(
+            textInput(
               paste0("overall_rating_", side),
               "Overall rating shown",
-              value = NA,
-              min = 1,
-              max = 5,
-              step = 0.1
+              value = "",
+              placeholder = "e.g. 4.8"
             ),
-            numericInput(
+            textInput(
               paste0("rating_count_", side),
               "Rating count shown",
-              value = NA,
-              min = 1,
-              step = 1
+              value = "",
+              placeholder = "e.g. 24"
             )
           ),
           actionButton(
@@ -164,14 +170,14 @@ item_panel <- function(label, side) {
 
 app_theme <- bs_theme(
   version = 5,
-  bg = "#fffdf2",
-  fg = "#2f2a12",
-  primary = "#ffe51f",
-  secondary = "#b59b00",
-  success = "#d4b300",
-  info = "#f1d447",
-  warning = "#ffef7d",
-  danger = "#b88700"
+  bg = "#f7f3ee",
+  fg = "#1f2937",
+  primary = "#2f6b5f",
+  secondary = "#6b7280",
+  success = "#2f6b5f",
+  info = "#dcece7",
+  warning = "#e8ddd0",
+  danger = "#8c5a3c"
 )
 
 
@@ -181,22 +187,23 @@ ui <- page_sidebar(
   tags$head(
     tags$style(HTML("
       :root {
-        --wib-ink: #2f2a12;
-        --wib-deep: #8f7400;
-        --wib-mid: #d4b300;
-        --wib-gold: rgba(255, 229, 31, 1);
-        --wib-soft: #ffef75;
-        --wib-pale: #fff6ad;
-        --wib-cream: #fffdf2;
-        --wib-panel: #fff8cf;
+        --wib-ink: #1f2937;
+        --wib-deep: #254f46;
+        --wib-mid: #2f6b5f;
+        --wib-gold: #5f9388;
+        --wib-soft: #dcece7;
+        --wib-pale: #ede5da;
+        --wib-cream: #f7f3ee;
+        --wib-panel: #ffffff;
       }
       body.bslib-page-sidebar {
-        background: linear-gradient(180deg, #fffef7 0%, var(--wib-cream) 42%, #fff9d9 100%);
+        background: linear-gradient(180deg, #faf8f4 0%, var(--wib-cream) 58%, #efe9e0 100%);
         color: var(--wib-ink);
       }
       .bslib-page-sidebar > .navbar {
-        background: linear-gradient(90deg, var(--wib-pale) 0%, var(--wib-gold) 52%, #f3d600 100%);
-        border-bottom: 1px solid rgba(148, 125, 0, 0.28);
+        background: rgba(246, 243, 238, 0.92);
+        border-bottom: 1px solid rgba(31, 41, 55, 0.08);
+        backdrop-filter: blur(10px);
       }
       .bslib-page-sidebar > .navbar .navbar-brand {
         color: var(--wib-ink);
@@ -204,19 +211,21 @@ ui <- page_sidebar(
         letter-spacing: 0.01em;
       }
       .bslib-sidebar-layout > .sidebar {
-        background: linear-gradient(180deg, #fff7b7 0%, #fff2a1 18%, #fff8d8 100%);
-        border-right: 1px solid rgba(148, 125, 0, 0.18);
+        background: linear-gradient(180deg, #f2ece4 0%, #ebe3d8 100%);
+        border-right: 1px solid rgba(31, 41, 55, 0.08);
       }
       .app-shell .card {
         border-radius: 18px;
-        border: 1px solid rgba(148, 125, 0, 0.18);
-        box-shadow: 0 10px 30px rgba(93, 78, 0, 0.06);
-        background: linear-gradient(180deg, #fffef8 0%, #fffbed 100%);
+        border: 1px solid rgba(31, 41, 55, 0.08);
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+        background: var(--wib-panel);
       }
       .app-shell .card-header {
-        background: linear-gradient(180deg, #fff7b5 0%, #fff2a0 100%);
-        border-bottom: 1px solid rgba(148, 125, 0, 0.12);
+        background: #f6f1ea;
+        border-bottom: 1px solid rgba(31, 41, 55, 0.06);
         font-weight: 600;
+        font-size: 1.05rem;
+        letter-spacing: 0.01em;
       }
       .app-shell {
         width: 100%;
@@ -249,8 +258,8 @@ ui <- page_sidebar(
         margin-bottom: 0.75rem;
       }
       .app-shell details.screenshot-mode-details {
-        background: linear-gradient(180deg, #fff8c8 0%, #fffdf2 100%);
-        border: 1px solid rgba(148, 125, 0, 0.18);
+        background: #faf7f3;
+        border: 1px solid rgba(31, 41, 55, 0.08);
         border-radius: 14px;
         padding: 0.9rem 1rem;
         margin-bottom: 0.9rem;
@@ -293,32 +302,32 @@ ui <- page_sidebar(
       .app-shell .btn-outline-primary:hover,
       .app-shell .btn-outline-primary:focus,
       .app-shell .btn-outline-primary:active {
-        background: linear-gradient(180deg, #fff06a 0%, var(--wib-gold) 100%);
-        border-color: var(--wib-gold);
-        color: var(--wib-ink);
+        background: linear-gradient(180deg, #3d7c6f 0%, var(--wib-mid) 100%);
+        border-color: var(--wib-mid);
+        color: #fcfbf8;
       }
       .app-shell .btn-outline-primary {
-        background: linear-gradient(180deg, #fffbed 0%, #fff2a7 100%);
-        border-color: rgba(214, 180, 0, 0.75);
-        color: #5f4f00;
+        background: #f8f6f2;
+        border-color: rgba(47, 107, 95, 0.3);
+        color: var(--wib-deep);
       }
       .app-shell .btn-primary:hover,
       .app-shell .btn-primary:focus,
       .app-shell .btn-primary:active {
-        background: linear-gradient(180deg, #ffe95a 0%, #f3d600 100%);
-        border-color: #f3d600;
-        color: var(--wib-ink);
+        background: linear-gradient(180deg, #356e63 0%, #265a50 100%);
+        border-color: #265a50;
+        color: #fcfbf8;
       }
       .app-shell .btn-report {
-        background: linear-gradient(180deg, #4f8f3d 0%, #386d2a 100%);
-        border-color: #2f5d24;
+        background: linear-gradient(180deg, #335f55 0%, #26463f 100%);
+        border-color: #1f3933;
         color: #f7fff2;
       }
       .app-shell .btn-report:hover,
       .app-shell .btn-report:focus,
       .app-shell .btn-report:active {
-        background: linear-gradient(180deg, #457f35 0%, #2f5d24 100%);
-        border-color: #274d1d;
+        background: linear-gradient(180deg, #2c544c 0%, #1f3933 100%);
+        border-color: #18302a;
         color: #f7fff2;
       }
       .app-shell .form-control:focus,
@@ -331,8 +340,8 @@ ui <- page_sidebar(
       .app-shell .form-control,
       .app-shell .shiny-input-container input,
       .app-shell .shiny-input-container textarea {
-        border-color: rgba(181, 155, 0, 0.22);
-        background: #fffef8;
+        border-color: rgba(31, 41, 55, 0.14);
+        background: #fbfaf8;
       }
       .app-shell .form-check-input:checked,
       .app-shell input[type='radio']:checked,
@@ -342,16 +351,16 @@ ui <- page_sidebar(
       }
       .app-shell .progress-bar,
       .app-shell .shiny-file-input-progress .progress-bar {
-        background: linear-gradient(90deg, var(--wib-soft) 0%, var(--wib-gold) 100%);
-        color: var(--wib-ink);
+        background: linear-gradient(90deg, #dcece7 0%, var(--wib-mid) 100%);
+        color: #1f2937;
         text-shadow: none;
       }
       .app-shell .btn-file,
       .app-shell .input-group-btn .btn,
       .app-shell .input-group-prepend .btn {
-        background: linear-gradient(180deg, #fff9d4 0%, #ffef8b 100%);
-        border-color: rgba(181, 155, 0, 0.35);
-        color: #5f4f00;
+        background: #f3ece2;
+        border-color: rgba(31, 41, 55, 0.12);
+        color: #5f4a2d;
       }
       .app-shell .compact-note {
         margin-bottom: 0.75rem;
@@ -376,6 +385,22 @@ ui <- page_sidebar(
       .app-shell .report-body p:last-child {
         margin-bottom: 0;
       }
+      .app-shell .report-export-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.85rem;
+        align-items: center;
+        margin-top: 1rem;
+      }
+      .app-shell .report-export-label {
+        font-weight: 600;
+        margin: 0;
+      }
+      .app-shell .report-export-row .btn,
+      .app-shell .report-export-row .shiny-download-link {
+        white-space: nowrap;
+        margin: 0;
+      }
       .app-shell .details-note {
         margin-bottom: 0.75rem;
       }
@@ -384,8 +409,8 @@ ui <- page_sidebar(
         gap: 0.85rem;
       }
       .app-shell details.result-details {
-        background: #fffdf4;
-        border: 1px solid rgba(148, 125, 0, 0.2);
+        background: #fbf8f4;
+        border: 1px solid rgba(31, 41, 55, 0.08);
         border-radius: 14px;
         padding: 0.9rem 1rem;
       }
@@ -393,6 +418,8 @@ ui <- page_sidebar(
         cursor: pointer;
         font-weight: 600;
         list-style: none;
+        font-size: 1.05rem;
+        letter-spacing: 0.01em;
       }
       .app-shell details.result-details > summary::-webkit-details-marker {
         display: none;
@@ -404,44 +431,41 @@ ui <- page_sidebar(
         width: 100%;
         min-height: 18rem;
         resize: vertical;
-        border: 1px solid rgba(148, 125, 0, 0.2);
+        border: 1px solid rgba(31, 41, 55, 0.1);
         border-radius: 12px;
         padding: 0.85rem 1rem;
         font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         font-size: 0.92rem;
         line-height: 1.5;
-        color: #17322d;
-        background: #fffef8;
+        color: #243240;
+        background: #f8f6f2;
       }
       .app-shell .parser-result {
         margin-top: 0.5rem;
         padding: 0.85rem 1rem;
         border-radius: 14px;
-        background: linear-gradient(180deg, rgba(255, 246, 173, 0.68) 0%, rgba(255, 251, 224, 0.96) 100%);
-        border: 1px solid rgba(214, 180, 0, 0.4);
+        background: #eef5f3;
+        border: 1px solid rgba(47, 107, 95, 0.18);
       }
       .app-shell .parser-meta-line {
         margin: 0 0 0.3rem 0;
         font-size: 0.95rem;
       }
       .app-shell .alert-warning {
-        background: linear-gradient(180deg, rgba(255, 246, 173, 0.86) 0%, rgba(255, 251, 224, 0.96) 100%);
-        border-color: rgba(214, 180, 0, 0.45);
-        color: #4d4100;
+        background: #f6eee2;
+        border-color: rgba(47, 107, 95, 0.2);
+        color: #5e4930;
       }
       .shiny-notification,
       .shiny-notification-message,
       .shiny-notification-warning,
       .shiny-notification-error {
-        background: linear-gradient(180deg, #fff6ad 0%, #fffdf2 100%);
-        border: 1px solid rgba(181, 155, 0, 0.35);
-        color: #4d4100;
+        background: #faf6f0;
+        border: 1px solid rgba(31, 41, 55, 0.12);
+        color: #3d3121;
       }
       .shiny-notification-close {
-        color: #7a6500;
-      }
-      .app-shell .shiny-html-output:empty {
-        display: none;
+        color: #6b5a45;
       }
       @media (max-width: 1100px) {
         .app-shell .item-grid {
@@ -462,6 +486,8 @@ ui <- page_sidebar(
   ),
   class = "app-shell",
   sidebar = sidebar(
+    actionButton("analyze_btn", "Analyze Inputs", class = "btn-primary w-100"),
+    actionButton("report_btn", "Generate Report", class = "btn btn-report w-100"),
     h5("How It Works"),
     tags$ul(
       tags$li("Choose between \"Histogram counts\", \"Histogram screenshot\", or \"Raw vector\"."),
@@ -470,9 +496,7 @@ ui <- page_sidebar(
       tags$li("Use raw rating vectors only when you already have the full list of scores."),
       tags$li("Click \"Analyze Inputs\" to get a plain-language answer, confidence interval, and an R code export for your own local modeling."),
       tags$li("Labels and pasted URLs are saved locally whenever you analyze a comparison.")
-    ),
-    actionButton("analyze_btn", "Analyze Inputs", class = "btn-primary w-100"),
-    actionButton("report_btn", "Generate Report", class = "btn btn-report w-100")
+    )
   ),
   div(
     class = "item-grid",
@@ -494,7 +518,8 @@ ui <- page_sidebar(
     card_body(
       fill = FALSE,
       fillable = FALSE,
-      uiOutput("generated_report")
+      uiOutput("generated_report"),
+      uiOutput("report_export_controls")
     )
   ),
   div(
@@ -531,11 +556,12 @@ server <- function(input, output, session) {
   parsed_counts_a <- reactiveVal(NULL)
   parsed_counts_b <- reactiveVal(NULL)
   analysis_requested <- reactiveVal(FALSE)
-  analysis_nonce <- reactiveVal(0L)
   analysis_result <- reactiveVal(NULL)
   analysis_error <- reactiveVal(NULL)
   distribution_open <- reactiveVal(FALSE)
   generated_report <- reactiveVal(NULL)
+  result_ui <- reactiveVal(NULL)
+  report_ui <- reactiveVal(NULL)
 
   item_label <- function(side) {
     fallback <- if (identical(side, "a")) "Item A" else "Item B"
@@ -561,7 +587,11 @@ server <- function(input, output, session) {
       if (!length(value)) {
         return(0)
       }
-      as.numeric(value[[1]])
+      number <- suppressWarnings(as.numeric(value[[1]]))
+      if (is.na(number) || !is.finite(number)) {
+        return(0)
+      }
+      number
     }, numeric(1)))
 
     mode <- input[[paste0("mode_", side)]]
@@ -601,7 +631,7 @@ server <- function(input, output, session) {
 
   item_snapshot <- function(side) {
     fallback <- if (identical(side, "a")) "Item A" else "Item B"
-    mode <- input[[paste0("mode_", side)]]
+    mode <- input[[paste0("mode_", side)]] %||% "histogram"
     payload <- list(
       displayed_overall_rating = optional_number(input[[paste0("overall_rating_", side)]]),
       displayed_rating_count = optional_number(input[[paste0("rating_count_", side)]], integer = TRUE)
@@ -703,14 +733,26 @@ server <- function(input, output, session) {
   output$parsed_counts_a <- render_parsed_counts(parsed_counts_a)
   output$parsed_counts_b <- render_parsed_counts(parsed_counts_b)
 
-  trigger_analysis <- function() {
-    analysis_nonce(isolate(analysis_nonce()) + 1L)
+  reset_screenshot_state <- function(side) {
+    parsed_store <- if (identical(side, "a")) parsed_counts_a else parsed_counts_b
+    status_store <- if (identical(side, "a")) parser_status_a else parser_status_b
+
+    parsed_store(NULL)
+    status_store("New screenshot uploaded. Click \"Parse Screenshot\" to estimate the new counts.")
+    for (i in seq_len(5)) {
+      updateNumericInput(session, paste0("count_", side, "_", i), value = 0)
+    }
+    updateTextInput(session, paste0("overall_rating_", side), value = "")
+    updateTextInput(session, paste0("rating_count_", side), value = "")
+    distribution_open(FALSE)
   }
 
   build_report <- function(analyzed) {
     f <- analyzed$frequentist
     label_a <- analyzed$labels[["A"]]
     label_b <- analyzed$labels[["B"]]
+    item_a <- analyzed$item_a
+    item_b <- analyzed$item_b
     summary_a <- f$group_summary[f$group_summary$group == "A", , drop = FALSE]
     summary_b <- f$group_summary[f$group_summary$group == "B", , drop = FALSE]
     diff <- f$difference_in_means
@@ -743,26 +785,181 @@ server <- function(input, output, session) {
       )
     }
 
+    item_detail_lines <- function(item, group_summary_row) {
+      mode_value <- item$mode %||% ""
+      mode_value <- if (length(mode_value)) as.character(mode_value[[1]]) else ""
+      mode_label <- if (identical(mode_value, "histogram")) {
+        "Histogram counts"
+      } else if (identical(mode_value, "screenshot")) {
+        "Histogram screenshot"
+      } else if (identical(mode_value, "vector")) {
+        "Raw vector"
+      } else {
+        "Unknown"
+      }
+
+      lines <- c(
+        sprintf("Label: %s", item$label),
+        sprintf("Input mode: %s", mode_label)
+      )
+
+      if (!is.null(item$url) && nzchar(item$url)) {
+        lines <- c(lines, sprintf("URL: %s", item$url))
+      }
+
+      if (!is.null(item$payload$displayed_overall_rating)) {
+        lines <- c(lines, sprintf("Displayed overall rating: %.1f", item$payload$displayed_overall_rating))
+      }
+      if (!is.null(item$payload$displayed_rating_count)) {
+        lines <- c(lines, sprintf("Displayed rating count: %d", item$payload$displayed_rating_count))
+      }
+
+      if (!is.null(item$payload$histogram_counts)) {
+        counts <- as.integer(item$payload$histogram_counts)
+        lines <- c(
+          lines,
+          sprintf("Histogram counts (1-star to 5-star): %s", paste(counts, collapse = ", ")),
+          sprintf("Reconstructed sample size: %d", sum(counts))
+        )
+      }
+
+      if (!is.null(item$payload$ratings_vector)) {
+        vector_values <- parse_rating_vector(item$payload$ratings_vector)
+        lines <- c(
+          lines,
+          sprintf("Raw vector length: %d", length(vector_values)),
+          sprintf("Raw vector preview: %s", paste(head(vector_values, 12), collapse = ", "))
+        )
+      }
+
+      lines <- c(
+        lines,
+        sprintf("Mean: %.3f", group_summary_row$mean[[1]]),
+        sprintf("SD: %.3f", group_summary_row$sd[[1]])
+      )
+
+      lines
+    }
+
+    local_model_code <- build_local_model_code(
+      ratings_df = analyzed$ratings_df,
+      label_a = label_a,
+      label_b = label_b,
+      url_a = item_a$url,
+      url_b = item_b$url
+    )
+
+    summary_paragraphs <- c(
+      sprintf(
+        "%s %s has an average rating of %.2f from %d ratings, while %s averages %.2f from %d ratings.",
+        winner_sentence,
+        label_a,
+        summary_a$mean[[1]],
+        summary_a$n[[1]],
+        label_b,
+        summary_b$mean[[1]],
+        summary_b$n[[1]]
+      ),
+      caution_sentence
+    )
+
     list(
       title = "Which Is Better?",
-      paragraphs = c(
-        sprintf(
-          "%s %s has an average rating of %.2f from %d ratings, while %s averages %.2f from %d ratings.",
-          winner_sentence,
-          label_a,
-          summary_a$mean[[1]],
-          summary_a$n[[1]],
-          label_b,
-          summary_b$mean[[1]],
-          summary_b$n[[1]]
+      summary_paragraphs = summary_paragraphs,
+      export_sections = list(
+        list(
+          title = "Formal Frequentist Result",
+          lines = c(
+            sprintf("Welch two-sample t-test"),
+            sprintf("Difference in means (B - A): %.4f", diff),
+            sprintf("95%% confidence interval: [%.4f, %.4f]", f$conf_int[1], f$conf_int[2]),
+            sprintf("p-value: %.6f", f$p_value),
+            sprintf("t statistic: %.4f", f$statistic)
+          )
         ),
-        caution_sentence,
-        sprintf(
-          "Formal check: Welch two-sample t-test, p = %.4f and t = %.2f.",
-          f$p_value,
-          f$statistic
+        list(
+          title = sprintf("Input Details: %s", label_a),
+          lines = item_detail_lines(item_a, summary_a)
+        ),
+        list(
+          title = sprintf("Input Details: %s", label_b),
+          lines = item_detail_lines(item_b, summary_b)
+        ),
+        list(
+          title = "Reconstructed R Code",
+          lines = strsplit(local_model_code, "\n", fixed = TRUE)[[1]],
+          preformatted = TRUE
         )
       )
+    )
+  }
+
+  build_result_ui <- function(analyzed) {
+    f <- analyzed$frequentist
+    label_a <- analyzed$labels[["A"]]
+    label_b <- analyzed$labels[["B"]]
+    summary_a <- f$group_summary[f$group_summary$group == "A", , drop = FALSE]
+    summary_b <- f$group_summary[f$group_summary$group == "B", , drop = FALSE]
+
+    diff <- f$difference_in_means
+    headline <- if (isTRUE(f$p_value < 0.05)) {
+      if (diff > 0) {
+        sprintf("%s is rated higher in this sample.", label_b)
+      } else if (diff < 0) {
+        sprintf("%s is rated higher in this sample.", label_a)
+      } else {
+        "The two items are effectively tied in this sample."
+      }
+    } else {
+      "This sample does not show a clear difference."
+    }
+
+    subline <- sprintf(
+      "%s averages %.2f from %d ratings; %s averages %.2f from %d ratings.",
+      label_a,
+      summary_a$mean[[1]],
+      summary_a$n[[1]],
+      label_b,
+      summary_b$mean[[1]],
+      summary_b$n[[1]]
+    )
+
+    statline <- sprintf(
+      "Difference (B - A) %.2f | 95%% CI [%.2f, %.2f] | p = %.4f | t = %.2f",
+      diff,
+      f$conf_int[1],
+      f$conf_int[2],
+      f$p_value,
+      f$statistic
+    )
+
+    item_lines <- c(
+      sprintf("%s: mean %.2f from %d ratings.", label_a, summary_a$mean[[1]], summary_a$n[[1]]),
+      sprintf("%s: mean %.2f from %d ratings.", label_b, summary_b$mean[[1]], summary_b$n[[1]])
+    )
+
+    tags$div(
+      tags$p(class = "summary-headline", headline),
+      tags$p(class = "summary-subline", subline),
+      tags$p(class = "summary-statline", statline),
+      lapply(item_lines, function(line) tags$p(class = "summary-item-line text-muted", line))
+    )
+  }
+
+  build_report_ui <- function(report) {
+    if (is.null(report)) {
+      return(
+        tags$p(
+          class = "text-muted",
+          "Click \"Generate Report\" after analyzing the inputs to create a short plain-language summary."
+        )
+      )
+    }
+
+    tags$div(
+      class = "report-body",
+      tags$p(class = "summary-headline", report$title),
+      lapply(report$summary_paragraphs %||% report$paragraphs %||% character(), tags$p)
     )
   }
 
@@ -788,8 +985,49 @@ server <- function(input, output, session) {
     list(
       ratings_df = ratings_df,
       frequentist = frequentist,
-      labels = c(A = label_a, B = label_b)
+      labels = c(A = label_a, B = label_b),
+      item_a = item_snapshot("a"),
+      item_b = item_snapshot("b")
     )
+  }
+
+  run_analysis <- function(success_message = NULL) {
+    result <- tryCatch(
+      compute_analysis_result(),
+      error = function(e) {
+        analysis_error(conditionMessage(e))
+        NULL
+      }
+    )
+
+    if (is.null(result)) {
+      analysis_result(NULL)
+      result_ui(
+        tags$div(
+          class = "alert alert-warning",
+          tags$strong("The app could not analyze these inputs yet. "),
+          analysis_error() %||% "The analysis could not run with the current inputs."
+        )
+      )
+      showNotification(
+        analysis_error() %||% "The analysis could not run with the current inputs.",
+        type = "error",
+        duration = 6
+      )
+      return(invisible(FALSE))
+    }
+
+    analysis_error(NULL)
+    analysis_result(result)
+    result_ui(build_result_ui(result))
+    if (!is.null(success_message)) {
+      showNotification(
+        success_message,
+        type = "message",
+        duration = 3
+      )
+    }
+    invisible(TRUE)
   }
 
   maybe_refresh_analysis <- function(side_label) {
@@ -805,27 +1043,19 @@ server <- function(input, output, session) {
       return(invisible(FALSE))
     }
 
-    refreshed <- tryCatch({
-      compute_analysis_result()
-      TRUE
-    }, error = function(e) {
-      showNotification(
-        paste(
-          sprintf("Parsed Item %s, but the comparison could not refresh yet.", side_label),
-          conditionMessage(e)
-        ),
-        type = "warning",
-        duration = 6
-      )
-      FALSE
-    })
+    refreshed <- run_analysis()
 
     if (isTRUE(refreshed)) {
-      trigger_analysis()
       showNotification(
         sprintf("Parsed Item %s and refreshed the comparison.", side_label),
         type = "message",
         duration = 4
+      )
+    } else {
+      showNotification(
+        sprintf("Parsed Item %s, but the comparison could not refresh yet.", side_label),
+        type = "warning",
+        duration = 6
       )
     }
 
@@ -839,14 +1069,14 @@ server <- function(input, output, session) {
       updateNumericInput(session, paste0("count_", side, "_", i), value = counts[[i]])
     }
     if (!is.null(result$used_average_rating) && length(result$used_average_rating) && is.finite(result$used_average_rating)) {
-      updateNumericInput(
+      updateTextInput(
         session,
         paste0("overall_rating_", side),
-        value = as.numeric(result$used_average_rating)
+        value = as.character(signif(as.numeric(result$used_average_rating), digits = 12))
       )
     }
     if (!is.null(result$used_total_reviews) && length(result$used_total_reviews) && is.finite(result$used_total_reviews)) {
-      updateNumericInput(
+      updateTextInput(
         session,
         paste0("rating_count_", side),
         value = as.integer(result$used_total_reviews)
@@ -878,8 +1108,8 @@ server <- function(input, output, session) {
     result <- tryCatch(
       parse_histogram_screenshot(
         path = input$screenshot_a$datapath,
-        average_rating = input$overall_rating_a,
-        total_reviews = input$rating_count_a
+        average_rating = optional_number(input$overall_rating_a),
+        total_reviews = optional_number(input$rating_count_a, integer = TRUE)
       ),
       error = function(e) list(success = FALSE, message = conditionMessage(e))
     )
@@ -895,6 +1125,11 @@ server <- function(input, output, session) {
     }
   })
 
+  observeEvent(input$screenshot_a, {
+    req(input$screenshot_a)
+    reset_screenshot_state("a")
+  }, ignoreInit = TRUE)
+
   observeEvent(input$parse_b, {
     req(input$screenshot_b)
     parser_status_b("Parsing screenshot...")
@@ -902,8 +1137,8 @@ server <- function(input, output, session) {
     result <- tryCatch(
       parse_histogram_screenshot(
         path = input$screenshot_b$datapath,
-        average_rating = input$overall_rating_b,
-        total_reviews = input$rating_count_b
+        average_rating = optional_number(input$overall_rating_b),
+        total_reviews = optional_number(input$rating_count_b, integer = TRUE)
       ),
       error = function(e) list(success = FALSE, message = conditionMessage(e))
     )
@@ -919,10 +1154,23 @@ server <- function(input, output, session) {
     }
   })
 
+  observeEvent(input$screenshot_b, {
+    req(input$screenshot_b)
+    reset_screenshot_state("b")
+  }, ignoreInit = TRUE)
+
   observeEvent(input$analyze_btn, {
     analysis_requested(TRUE)
     analysis_error(NULL)
-    trigger_analysis()
+    generated_report(NULL)
+    report_ui(build_report_ui(NULL))
+    result_ui(
+      tags$div(
+        tags$p(class = "summary-headline", "Updating analysis..."),
+        tags$p(class = "text-muted", "The app is recomputing the comparison from the current inputs.")
+      )
+    )
+    run_analysis("Analysis updated.")
   })
 
   observeEvent(input$report_btn, {
@@ -935,7 +1183,9 @@ server <- function(input, output, session) {
       return()
     }
 
-    generated_report(build_report(analysis_result()))
+    report <- build_report(analysis_result())
+    generated_report(report)
+    report_ui(build_report_ui(report))
     showNotification(
       "Generated a short report from the current analysis.",
       type = "message",
@@ -956,129 +1206,32 @@ server <- function(input, output, session) {
     })
   })
 
-  observeEvent(analysis_nonce(), {
-    result <- tryCatch(
-      compute_analysis_result(),
-      error = function(e) {
-        analysis_error(conditionMessage(e))
-        NULL
-      }
-    )
-
-    if (is.null(result)) {
-      analysis_result(NULL)
-      showNotification(
-        analysis_error() %||% "The analysis could not run with the current inputs.",
-        type = "error",
-        duration = 6
-      )
-    } else {
-      analysis_error(NULL)
-      analysis_result(result)
-    }
-  }, ignoreInit = TRUE)
-
-  outcome_summary <- reactive({
-    req(analysis_requested())
-    req(is.null(analysis_error()))
-    analyzed <- analysis_result()
-    req(!is.null(analyzed))
-    f <- analyzed$frequentist
-    label_a <- analyzed$labels[["A"]]
-    label_b <- analyzed$labels[["B"]]
-    summary_a <- f$group_summary[f$group_summary$group == "A", , drop = FALSE]
-    summary_b <- f$group_summary[f$group_summary$group == "B", , drop = FALSE]
-
-    diff <- f$difference_in_means
-    if (isTRUE(f$p_value < 0.05)) {
-      headline <- if (diff > 0) {
-        sprintf("%s is rated higher in this sample.", label_b)
-      } else if (diff < 0) {
-        sprintf("%s is rated higher in this sample.", label_a)
-      } else {
-        "The two items are effectively tied in this sample."
-      }
-    } else {
-      headline <- "This sample does not show a clear difference."
-    }
-
-    subline <- sprintf(
-      "%s averages %.2f from %d ratings; %s averages %.2f from %d ratings.",
-      label_a,
-      summary_a$mean[[1]],
-      summary_a$n[[1]],
-      label_b,
-      summary_b$mean[[1]],
-      summary_b$n[[1]]
-    )
-
-    statline <- sprintf(
-      "Difference (B - A) %.2f | 95%% CI [%.2f, %.2f] | p = %.4f | t = %.2f",
-      diff,
-      f$conf_int[1],
-      f$conf_int[2],
-      f$p_value,
-      f$statistic
-    )
-
-    item_lines <- c(
-      sprintf("%s: mean %.2f from %d ratings.", label_a, summary_a$mean[[1]], summary_a$n[[1]]),
-      sprintf("%s: mean %.2f from %d ratings.", label_b, summary_b$mean[[1]], summary_b$n[[1]])
-    )
-
-    list(headline = headline, subline = subline, statline = statline, item_lines = item_lines)
-  })
-
   output$headline_result <- renderUI({
-    if (!isTRUE(analysis_requested())) {
-      return(
-        tags$div(
-          tags$p(
-            class = "summary-headline",
-            "Run an analysis to see a plain-language comparison here."
-          ),
-          tags$p(
-            class = "text-muted",
-            "The app will summarize which item looks better, how large the gap is, and how uncertain that difference still is."
-          )
-        )
+    result_ui() %||% tags$div(
+      tags$p(
+        class = "summary-headline",
+        "Run an analysis to see a plain-language comparison here."
+      ),
+      tags$p(
+        class = "text-muted",
+        "The app will summarize which item looks better, how large the gap is, and how uncertain that difference still is."
       )
-    }
-
-    if (!is.null(analysis_error())) {
-      return(
-        tags$div(
-          class = "alert alert-warning",
-          tags$strong("The app could not analyze these inputs yet. "),
-          analysis_error()
-        )
-      )
-    }
-
-    summary <- outcome_summary()
-    tags$div(
-      tags$p(class = "summary-headline", summary$headline),
-      tags$p(class = "summary-subline", summary$subline),
-      tags$p(class = "summary-statline", summary$statline),
-      lapply(summary$item_lines, function(line) tags$p(class = "summary-item-line text-muted", line))
     )
   })
 
   output$generated_report <- renderUI({
-    report <- generated_report()
-    if (is.null(report)) {
-      return(
-        tags$p(
-          class = "text-muted",
-          "Click \"Generate Report\" after analyzing the inputs to create a short plain-language summary."
-        )
-      )
-    }
+    report_ui() %||% build_report_ui(NULL)
+  })
 
-    tags$div(
-      class = "report-body",
-      tags$p(class = "summary-headline", report$title),
-      lapply(report$paragraphs, tags$p)
+  output$report_export_controls <- renderUI({
+    req(!is.null(generated_report()))
+    div(
+      class = "report-export-row",
+      tags$p(class = "report-export-label", "Export to:"),
+      downloadButton("download_report_html", "HTML", class = "btn btn-outline-primary"),
+      downloadButton("download_report_docx", "DOCX", class = "btn btn-outline-primary"),
+      downloadButton("download_report_md", "Text (.md)", class = "btn btn-outline-primary"),
+      downloadButton("download_report_tex", "TeX", class = "btn btn-outline-primary")
     )
   })
 
@@ -1154,7 +1307,16 @@ server <- function(input, output, session) {
 
   output$ratings_plot <- renderPlot({
     ratings_df <- current_ratings_data()
-    validate(need(!is.null(ratings_df), "Enter valid histogram counts or raw ratings to preview the distribution."))
+    if (is.null(ratings_df)) {
+      plot.new()
+      text(
+        x = 0.5,
+        y = 0.5,
+        labels = "Enter valid histogram counts or raw ratings to preview the distribution.",
+        cex = 1.05
+      )
+      return(invisible(NULL))
+    }
     rating_levels <- factor(ratings_df$rating, levels = 1:5)
     count_matrix <- table(ratings_df$place, rating_levels)
     old_par <- par(no.readonly = TRUE)
@@ -1163,8 +1325,8 @@ server <- function(input, output, session) {
     barplot(
       t(count_matrix),
       beside = TRUE,
-      col = c("#fff6ad", "#ffef75", "#ffe94f", "#ffe02a", "#d4b300"),
-      border = "#c6a300",
+      col = c("#e7f1ee", "#cfe1dc", "#a9c9c0", "#6fa194", "#2f6b5f"),
+      border = "#254f46",
       names.arg = rownames(count_matrix),
       las = 0,
       cex.names = 1.05,
@@ -1178,8 +1340,8 @@ server <- function(input, output, session) {
     legend(
       "topright",
       legend = paste(1:5, "star"),
-      fill = c("#fff6ad", "#ffef75", "#ffe94f", "#ffe02a", "#d4b300"),
-      border = "#c6a300",
+      fill = c("#e7f1ee", "#cfe1dc", "#a9c9c0", "#6fa194", "#2f6b5f"),
+      border = "#254f46",
       bty = "n",
       cex = 1.08
     )
@@ -1215,6 +1377,68 @@ server <- function(input, output, session) {
       code
     )
   })
+
+  build_report_filename <- function(report, extension) {
+    paste0(
+      sanitize_report_slug(report$title),
+      "-",
+      format(Sys.Date(), "%Y-%m-%d"),
+      ".",
+      extension
+    )
+  }
+
+  output$download_report_html <- downloadHandler(
+    filename = function() {
+      report <- generated_report()
+      req(!is.null(report))
+      build_report_filename(report, "html")
+    },
+    content = function(file) {
+      report <- generated_report()
+      req(!is.null(report))
+      write_report_export(report = report, format = "html", path = file)
+    }
+  )
+
+  output$download_report_docx <- downloadHandler(
+    filename = function() {
+      report <- generated_report()
+      req(!is.null(report))
+      build_report_filename(report, "docx")
+    },
+    content = function(file) {
+      report <- generated_report()
+      req(!is.null(report))
+      write_report_export(report = report, format = "docx", path = file)
+    }
+  )
+
+  output$download_report_md <- downloadHandler(
+    filename = function() {
+      report <- generated_report()
+      req(!is.null(report))
+      build_report_filename(report, "md")
+    },
+    content = function(file) {
+      report <- generated_report()
+      req(!is.null(report))
+      write_report_export(report = report, format = "md", path = file)
+    }
+  )
+
+  output$download_report_tex <- downloadHandler(
+    filename = function() {
+      report <- generated_report()
+      req(!is.null(report))
+      build_report_filename(report, "tex")
+    },
+    content = function(file) {
+      report <- generated_report()
+      req(!is.null(report))
+      write_report_export(report = report, format = "tex", path = file)
+    }
+  )
 }
 
 

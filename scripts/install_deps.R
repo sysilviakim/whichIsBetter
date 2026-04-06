@@ -6,7 +6,7 @@ install_r_packages <- function(pkgs) {
 }
 
 
-install_r_packages(c("shiny", "bslib", "jsonlite", "base64enc", "DBI", "RSQLite"))
+install_r_packages(c("shiny", "bslib", "jsonlite", "base64enc", "DBI", "RSQLite", "officer"))
 
 python_bin <- Sys.which("python")
 if (nzchar(python_bin)) {

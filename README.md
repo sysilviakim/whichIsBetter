@@ -12,11 +12,12 @@ The app is platform-agnostic and works from user-supplied evidence rather than l
 
 - frequentist difference-in-means test with Welch's t-test
 - plain-language comparison summary with confidence interval and p-value
+- short in-app generated report plus a fuller downloadable export in `.html`, `.docx`, `.md`, or `.tex`
 - side-by-side star-count distribution plotting
 - screenshot parser that estimates 1-to-5 counts and then lets the user edit them
 - optional manual entry of displayed overall rating and total rating count to guide the parser when OCR is imperfect
 - local SQLite history that saves labels, pasted URLs, and comparison metadata each time you analyze
-- folded R code export so users can copy the reconstructed raw ratings into their own local R workflow
+- folded R code export so users can copy the reconstructed raw ratings into their own local R workflow, with compact `rep()`-based vectors
 
 ## Run locally
 
